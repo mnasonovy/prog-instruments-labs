@@ -1,23 +1,19 @@
 #!/usr/bin/env python
 """
-#######################################################
-# Python Music Player
-# By Benjamin Urquhart
-# VERSION: 2.4.3
+Python Music Player
+By Benjamin Urquhart
+VERSION: 2.4.3
 
 This player is designed to play music on a Raspberry Pi,
 but can be used on Windows and OSX. OSX support is limited.
 
 Don't expect good documentation for a little while.
-#######################################################
 """
 
-# Дандеры
 __all__ = []
 __version__ = '2.4.3'
 __author__ = 'Benjamin Urquhart'
 
-# Стандартные библиотеки
 import datetime
 import os
 import sys
@@ -30,13 +26,11 @@ from random import randint
 from threading import Thread as Process
 from time import sleep
 
-# Сторонние библиотеки
 try:
     import requests
 except ImportError:
     pass
 
-#####################################################
 thread_use = False
 stop = False
 skip = False
@@ -56,18 +50,17 @@ console = False
 text = ''
 song_num = 1
 kill = False
-######################################################
-print("Starting Python Music Player " + version + "." + revision) #
-######################################################
+
+print("Starting Python Music Player " + version + "." + revision)
+
 def mkdir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
-######################################################
+
 def touch(path):
     with open(path, 'a'):
         os.utime(path, None)
-######################################################
-# The shutdown process
+
 def shutdown():
     try:
         bcast("\n")
@@ -83,8 +76,7 @@ def shutdown():
         log_file.close()
         pygame.quit()
         quit()
-######################################################
-# Custom logging function
+
 def log(message):
     try:
         if debug:
@@ -94,7 +86,7 @@ def log(message):
         log_file.write("\n")
     except:
         pass
-######################################################
+
 def log_error():
     try:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -105,7 +97,7 @@ def log_error():
             bcast("[Error]: " + ''.join(line for line in lines), True)
     except:
         pass
-######################################################
+
 def bcast(message, err=False):
     try:
         if err:
@@ -115,7 +107,7 @@ def bcast(message, err=False):
         text = message
     except:
         pass
-######################################################
+
 def updater():
     log('Update requested; attempting...')
     if update == 0:
@@ -166,8 +158,7 @@ def updater():
         except:
             log_error()
             bcast('Download failed')
-######################################################
-# To control the player remotely (non-functional)
+
 def server():
     try:
         import socket
@@ -190,8 +181,7 @@ def server():
     except:
         print("Couldn't create control server")
         log_error()
-######################################################
-# Get news updates
+
 def news():
     log("Getting news")
     try:
@@ -206,7 +196,7 @@ def news():
     except:
         log_error()
         bcast("Couldn't get news updates", True)
-######################################################
+
 def control():
     thread_use = True
     option = ''
@@ -242,7 +232,7 @@ def control():
         log_error()
     sleep(0.1)
     thread_use = False
-###################################################
+
 def control2():
     try:
         for event in pygame.event.get():
@@ -273,7 +263,7 @@ def control2():
     except:
         log_error()
     sleep(0.2)
-######################################################
+
 mkdir('logs')
 current_time = datetime.datetime.now()
 try:
@@ -281,7 +271,7 @@ try:
 except:
     log_error()
     bcast("Failed to create log")
-######################################################
+
 def display(text, background, screen):
     font = pygame.font.Font("freesansbold", 36)
     out = font.render(text, 1, (10, 10, 10))
@@ -290,10 +280,9 @@ def display(text, background, screen):
     background.blit(out, text_pos)
     screen.blit(background, (0, 0))
     pygame.display.flip()
-######################################################
+
 # server()
-######################################################
-# Looking for pygame...
+
 try:
     import pygame
     from pygame.locals import *
@@ -338,8 +327,7 @@ except ImportError:
         log_error()
         shutdown()
     exit()
-#######################################################
-# Load pygame module
+
 try:
     pygame.init()
     pygame.mixer.init()
@@ -348,7 +336,7 @@ except:
     bcast("Couldn't run pygame.init()", True)
     log("pygame.init() failed")
     log_error()
-#######################################################
+
 try:
     if len(sys.argv) > 1:
         i = 1
@@ -389,9 +377,8 @@ except:
     pass
 if kill:
     exit()
-######################################################
-# Checking for updates...
-url = "benjaminurquhart.me"  # This wasn't the original URL - replaced for privacy
+
+url = "benjaminurquhart.me"
 update = 0
 try:
     log('Checking for updates...')
@@ -420,11 +407,11 @@ except:
     bcast('Failed to check for updates', True)
     log_error()
     log('Update check failed')
-######################################################
+
 mkdir('Music')
 log("Player starting...")
 news()
-######################################################
+
 try:
     if not console:
         screen = pygame.display.set_mode((1000, 200))
@@ -438,7 +425,6 @@ except:
     log_error()
     console = True
 log("Player started")
-# Check the Music folder for tracks
 sound_data = os.listdir('./Music')
 try:
     for i in sound_data:
@@ -450,8 +436,6 @@ try:
         bcast('No music found!')
         shutdown()
     bcast("Number of songs: " + str(amount))
-#######################################################
-# Play the music
     while i != amount:
         select = randint(0, amount - 1)
         if option.lower() == "y":
@@ -470,8 +454,6 @@ try:
                 log('Now Playing: ' + current_song)
             except:
                 bcast("Couldn't play " + current_song)
-#######################################################
-# Play loaded track
             pygame.mixer.music.play()
             while pygame.mixer.music.get_busy():
                 if not console:
@@ -481,7 +463,6 @@ try:
                     t = Process(None, control())
                     t.daemon = False
                     t.start()
-#######################################################
             if not current_song in played_songs:
                 played_songs.append(current_song)
                 i = i + 1
@@ -490,7 +471,6 @@ try:
     bcast("All songs have been played!")
     log('All songs have been played')
     shutdown()
-#######################################################
 except:
     log_error()
     shutdown()
