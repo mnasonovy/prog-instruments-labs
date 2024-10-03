@@ -11,24 +11,26 @@ but can be used on Windows and OSX. OSX support is limited.
 Don't expect good documentation for a little while.
 #######################################################
 """
-version = '2.4'
-revision = '3'
-######################################################
+
+# Стандартные библиотеки
 import datetime
-import urllib
-import urllib2
 import os
 import sys
 import string
 import tarfile
+import traceback
+import urllib
+import urllib2
+from random import randint
 from threading import Thread as Process
 from time import sleep
-from random import randint
+
+# Сторонние библиотеки
 try:
-    import traceback
     import requests
 except ImportError:
     pass
+
 #####################################################
 thread_use = False
 stop = False
@@ -91,8 +93,7 @@ def log(message):
 def log_error():
     try:
         exc_type, exc_value, exc_traceback = sys.exc_info()
-        lines = traceback.format_exception(exc_type, exc_value,
-                                            exc_traceback)
+        lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
         log('')
         log(''.join(line for line in lines))
         if debug:
