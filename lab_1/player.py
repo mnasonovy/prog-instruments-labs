@@ -25,43 +25,47 @@ import urllib2
 from random import randint
 from threading import Thread as Process
 from time import sleep
+from typing import List, Optional
 
 try:
     import requests
 except ImportError:
     pass
 
-thread_use = False
-stop = False
-skip = False
-pause = False
-play = False
-debug = False
-option = "n"
-select = 0
-current_song = ""
-amount = 0
-played_songs = []
-playlist = []
-check = ""
-width = 800
-height = 600
-console = False
-text = ''
-song_num = 1
-kill = False
+thread_use: bool = False
+stop: bool = False
+skip: bool = False
+pause: bool = False
+play: bool = False
+debug: bool = False
+option: str = "n"
+select: int = 0
+current_song: str = ""
+amount: int = 0
+played_songs: List[str] = []
+playlist: List[str] = []
+check: str = ""
+width: int = 800
+height: int = 600
+console: bool = False
+text: str = ''
+song_num: int = 1
+kill: bool = False
 
-print("Starting Python Music Player " + version + "." + revision)
+print("Starting Python Music Player " + __version__)
 
-def mkdir(directory):
+def mkdir(directory: str) -> None:
+    """Create a directory if it does not exist."""
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def touch(path):
+def touch(path: str) -> None:
+    """Create a file or update its timestamp."""
     with open(path, 'a'):
         os.utime(path, None)
 
-def shutdown():
+def shutdown() -> None:
+    """Shutdown the player gracefully."""
     try:
         bcast("\n")
         bcast("Stopping...")
@@ -77,7 +81,8 @@ def shutdown():
         pygame.quit()
         quit()
 
-def log(message):
+def log(message: str) -> None:
+    """Log a message to the log file."""
     try:
         if debug:
             print("[Debug]: " + message)
@@ -87,7 +92,8 @@ def log(message):
     except:
         pass
 
-def log_error():
+def log_error() -> None:
+    """Log the last error to the log file."""
     try:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
@@ -98,7 +104,8 @@ def log_error():
     except:
         pass
 
-def bcast(message, err=False):
+def bcast(message: str, err: bool = False) -> None:
+    """Broadcast a message to the console or log."""
     try:
         if err:
             print(message)
@@ -108,7 +115,8 @@ def bcast(message, err=False):
     except:
         pass
 
-def updater():
+def updater() -> None:
+    """Check for updates and install if available."""
     log('Update requested; attempting...')
     if update == 0:
         bcast('No update found.')
@@ -159,7 +167,8 @@ def updater():
             log_error()
             bcast('Download failed')
 
-def server():
+def server() -> None:
+    """Start a control server for the player."""
     try:
         import socket
         host = socket.gethostname()
@@ -182,7 +191,8 @@ def server():
         print("Couldn't create control server")
         log_error()
 
-def news():
+def news() -> None:
+    """Fetch and display news updates."""
     log("Getting news")
     try:
         news_response = urllib2.urlopen("http://" + url + "/news.txt")
@@ -197,7 +207,9 @@ def news():
         log_error()
         bcast("Couldn't get news updates", True)
 
-def control():
+def control() -> None:
+    """Handle user input for controlling the player."""
+    global thread_use, option
     thread_use = True
     option = ''
     option = raw_input('> ')
@@ -233,7 +245,8 @@ def control():
     sleep(0.1)
     thread_use = False
 
-def control2():
+def control2() -> None:
+    """Handle keyboard events for controlling the player."""
     try:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
@@ -272,7 +285,8 @@ except:
     log_error()
     bcast("Failed to create log")
 
-def display(text, background, screen):
+def display(text: str, background: 'pygame.Surface', screen: 'pygame.Surface') -> None:
+    """Display text on the screen."""
     font = pygame.font.Font("freesansbold", 36)
     out = font.render(text, 1, (10, 10, 10))
     text_pos = out.get_rect()
@@ -378,8 +392,8 @@ except:
 if kill:
     exit()
 
-url = "benjaminurquhart.me"
-update = 0
+url: str = "benjaminurquhart.me"
+update: int = 0
 try:
     log('Checking for updates...')
     log('Getting info from ' + url)
@@ -387,20 +401,20 @@ try:
     rev = urllib2.urlopen('http://' + url + '/rev.txt')
     ver = ver.read()
     rev = rev.read()
-    if float(ver) > float(version):
+    if float(ver) > float(__version__):
         log('Update found!')
         bcast("Python Music Player " + ver + " is available")
         bcast("Type update at the prompt to download")
         update = 1
-    elif float(ver) < float(version):
+    elif float(ver) < float(__version__):
         log('Indev version in use')
         bcast('Indev version in use')
-    elif int(rev) > int(revision) and float(ver) == float(version):
+    elif int(rev) > int(revision) and float(ver) == float(__version__):
         log('New revision found!')
         bcast('Revision ' + str(rev) + ' is available')
         bcast('Type update at the prompt to download')
         update = 1
-    elif float(ver) == float(version):
+    elif float(ver) == float(__version__):
         log('No update found')
         bcast('No update found')
 except:
