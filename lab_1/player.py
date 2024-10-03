@@ -12,6 +12,11 @@ Don't expect good documentation for a little while.
 #######################################################
 """
 
+# Дандеры
+__all__ = []
+__version__ = '2.4.3'
+__author__ = 'Benjamin Urquhart'
+
 # Стандартные библиотеки
 import datetime
 import os
