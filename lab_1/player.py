@@ -25,7 +25,7 @@ import urllib2
 from random import randint
 from threading import Thread as Process
 from time import sleep
-from typing import List, Optional
+from typing import List
 
 try:
     import requests
@@ -111,7 +111,6 @@ def bcast(message: str, err: bool = False) -> None:
             print(message)
         else:
             print("[Player]: " + message)
-        text = message
     except:
         pass
 
@@ -131,7 +130,7 @@ def updater() -> None:
             except:
                 status = 200
                 log_error()
-            if status == int(200):
+            if status == 200:
                 try:
                     filename = urllib.urlretrieve(
                         'http://' + url + '/python/downloads/player/'
@@ -216,7 +215,7 @@ def control() -> None:
     try:
         option = option.replace("\n", '')
         option = option.lower()
-        if option == 'quit' or option == 'stop':
+        if option in ('quit', 'stop'):
             print("Use Control-C to quit")
         elif option == 'skip':
             pygame.mixer.music.stop()
@@ -230,12 +229,8 @@ def control() -> None:
         elif option == '':
             option = ''
         elif option == 'debug':
-            if debug:
-                print("Debug mode disabled")
-                debug = False
-            else:
-                print("Debug mode enabled")
-                debug = True
+            debug = not debug
+            print("Debug mode " + ("enabled" if debug else "disabled"))
         elif option == "news":
             news()
         else:
@@ -252,11 +247,8 @@ def control2() -> None:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_d:
                     print("Debug")
-                    if debug:
-                        debug = False
-                    else:
-                        debug = True
-                if event.key == pygame.K_SPACE or event.key == pygame.K_F11:
+                    debug = not debug
+                if event.key in (pygame.K_SPACE, pygame.K_F11):
                     bcast("Pause")
                     if pause:
                         pygame.mixer.music.play()
@@ -270,7 +262,7 @@ def control2() -> None:
                 if event.key == pygame.K_F12:
                     bcast("Skip")
                     pygame.mixer.music.stop()
-                if event.key == pygame.K_F10 or event.key == pygame.K_q:
+                if event.key in (pygame.K_F10, pygame.K_q):
                     bcast("Quit")
                     shutdown()
     except:
@@ -315,7 +307,7 @@ except ImportError:
                 'https://pygame.org/ftp/pygame-1.9.1release-python.org-'
                 '32bit-py2.7-macosx10.3.dmg', 'pygame-mac.dmg')
             log('Success!')
-        elif os_version == 'linux2' or 'cygwin':
+        elif os_version in ('linux2', 'cygwin'):
             print('You are using linux or cygwin')
             print("Use the command 'sudo pip install pygame' to download\n"
                   "the necessary modules")
@@ -356,11 +348,11 @@ try:
         i = 1
         while i < len(sys.argv):
             arg = sys.argv[i]
-            if arg == "--console" or arg == "-c":
+            if arg in ("--console", "-c"):
                 console = True
-            elif arg == "--verbose" or arg == "-v":
+            elif arg in ("--verbose", "-v"):
                 debug = True
-            elif arg == "-f" or arg == "--file":
+            elif arg in ("-f", "--file"):
                 pygame.init()
                 try:
                     pygame.mixer.music.load(sys.argv[i + 1])
@@ -373,7 +365,7 @@ try:
                     log_error()
                     print("There was an error playing the file")
                     kill = True
-            elif arg == "-h" or arg == "--help":
+            elif arg in ("-h", "--help"):
                 print('Plays music in the "Music" folder within the current '
                       'directory\n')
                 print("Usage: " + sys.argv[0] + " [-hvc] [-f <filepath>]")
@@ -386,7 +378,7 @@ try:
                       " -v -c -f /sample/file/path/foo.bar")
                 print("\t " + sys.argv[0] + " -f foo.bar")
                 kill = True
-            i = i + 1
+            i += 1
 except:
     pass
 if kill:
@@ -477,11 +469,11 @@ try:
                     t = Process(None, control())
                     t.daemon = False
                     t.start()
-            if not current_song in played_songs:
+            if current_song not in played_songs:
                 played_songs.append(current_song)
-                i = i + 1
+                i += 1
             sleep(0.2)
-            song_num = song_num + 1
+            song_num += 1
     bcast("All songs have been played!")
     log('All songs have been played')
     shutdown()
