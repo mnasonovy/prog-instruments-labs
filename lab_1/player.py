@@ -59,10 +59,12 @@ def mkdir(directory: str) -> None:
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+
 def touch(path: str) -> None:
     """Create a file or update its timestamp."""
     with open(path, 'a'):
         os.utime(path, None)
+
 
 def shutdown() -> None:
     """Shutdown the player gracefully."""
@@ -81,6 +83,7 @@ def shutdown() -> None:
         pygame.quit()
         quit()
 
+
 def log(message: str) -> None:
     """Log a message to the log file."""
     try:
@@ -91,6 +94,7 @@ def log(message: str) -> None:
         log_file.write("\n")
     except:
         pass
+
 
 def log_error() -> None:
     """Log the last error to the log file."""
@@ -104,6 +108,7 @@ def log_error() -> None:
     except:
         pass
 
+
 def bcast(message: str, err: bool = False) -> None:
     """Broadcast a message to the console or log."""
     try:
@@ -113,6 +118,7 @@ def bcast(message: str, err: bool = False) -> None:
             print("[Player]: " + message)
     except:
         pass
+
 
 def updater() -> None:
     """Check for updates and install if available."""
@@ -166,6 +172,7 @@ def updater() -> None:
             log_error()
             bcast('Download failed')
 
+
 def server() -> None:
     """Start a control server for the player."""
     try:
@@ -190,6 +197,7 @@ def server() -> None:
         print("Couldn't create control server")
         log_error()
 
+
 def news() -> None:
     """Fetch and display news updates."""
     log("Getting news")
@@ -205,6 +213,7 @@ def news() -> None:
     except:
         log_error()
         bcast("Couldn't get news updates", True)
+
 
 def control() -> None:
     """Handle user input for controlling the player."""
@@ -239,6 +248,7 @@ def control() -> None:
         log_error()
     sleep(0.1)
     thread_use = False
+
 
 def control2() -> None:
     """Handle keyboard events for controlling the player."""
@@ -277,7 +287,9 @@ except:
     log_error()
     bcast("Failed to create log")
 
-def display(text: str, background: 'pygame.Surface', screen: 'pygame.Surface') -> None:
+
+def display(text: str, background: 'pygame.Surface', 
+            screen: 'pygame.Surface') -> None:
     """Display text on the screen."""
     font = pygame.font.Font("freesansbold", 36)
     out = font.render(text, 1, (10, 10, 10))
