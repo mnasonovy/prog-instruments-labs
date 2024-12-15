@@ -133,30 +133,19 @@ class YySpider(scrapy.Spider):
 
     
     def parse_author(self, response):
-        """ 解析主播的信息(只有主播的地址才需要这条解析） """
+        logging.info(f"Parsing author data from URL: {response.url}")
         try:
-            items = []
             loadPage = response.xpath('//script')[-1]
             user = loadPage.re(r'user:(\{\s*.*\})')[0]
-            user = re.sub(r'\n', '', user)              # 替换掉空白符，后面的一条记录方便以换行符标记
             user = json.loads(user)
             user_id = user['uid']
             user_yyNo = user['yyNo']
             user_uid = user['UID']
-            user_json = json.dumps(user)
-            if user_id and user_uid and user_yyNo:
-                with open('all_author.txt', 'a+') as fp:
-                    if user_id not in fp.read().decode('utf8'):
-                        fp.seek(0, 2)
-                        fp.write('|'.join((user_id, user_yyNo, user_uid, user_json)) + '\n')
-            else:
-                with open('unsolved_anchor.txt', 'a+') as fp:
-                    fp.seek(0, 2)
-                    fp.write('|'.join((user_id, user_yyNo, user_uid, user_json)) + '\n')
-        except :
-            pass
-        
-        return items
+            logging.info(f"Extracted author data: UID={user_uid}, YYNo={user_yyNo}, ID={user_id}")
+        except Exception as e:
+            logging.error(f"Error parsing author data from {response.url}: {e}")
+            return []
+
 
     def parse_feed(self, response):
         "根据feedid, 粉丝的puid找到视频的data_pid, 主播的data_puid"
