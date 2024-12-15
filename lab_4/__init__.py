@@ -35,78 +35,102 @@ class YySpider(scrapy.Spider):
         logging.info(f"Spider '{self.name}' initialized with start URLs: {self.start_urls}")
         
     def parse(self, response):
-        time.sleep(1)
+        logging.info(f"Received response for URL: {response.url}")
+
         playList = response.xpath('//ul[@id="playList"]/li')
+        if not playList:
+            logging.warning(f"No videos found on page: {response.url}")
+
         items = []
-        urls = []           # 
-        zone_urls = []      # 访问fan's zone url
-        author_urls = []     # 访问author's zone url
+        urls = []
+        zone_urls = []  
+        author_urls = []  
+
+        logging.info("Starting to parse videos...")
         for video in playList:
-            item = YyItem()
-            item['data_anchor'] = video.xpath('@data-anchor').extract()[0]
-            item['data_puid'] = video.xpath('@data-puid').extract()[0].strip()
-            item['data_videofrom'] = video.xpath('@data-videofrom').extract()[0]
-            item['data_pid'] = video.xpath('@data-pid').extract()[0]
-            item['data_ouid'] = video.xpath('@data-ouid').extract()[0]
-            item['v_thumb_img'] = video.xpath('.//img/@src').extract()[0]
-            item['v_word_cut'] = video.xpath('.//a[@class="word-cut"]/text()').extract()[0]
-            item['v_play_times'] = video.xpath('.//span[@class="times"]/text()').extract()[0]
-            item['v_duration'] = video.xpath('.//span[@class="duration"]/text()').extract()[0]
-            item['data_yyNo'] = ''
-            items.append(item)
             try:
-                # 确定是否要根据 data_pid 进行popularAuthor 扩展
-                with open( item['data_anchor'] + '.txt', 'r') as fp:
-                    if item['data_pid'] in fp.read().decode('utf8'):
-                        pass
-                    else:
-                        urls.append("http://video.z.yy.com/getVideoTapeByPid.do?" +
-                                    "uid=" + item["data_anchor"] +
-                                    "&programId=" + item["data_pid"] +
-                                    "&videoFrom=popularAnchor")           
-            except IOError as e:
-                if e.errno == 2:
-                    open( item['data_anchor'] + '.txt', 'a').close()
-            
-            # 确定是否解析到主播的 data_puid, 如果解析到了，就将其保存到author.txt      
-            try:
-                if item['data_puid']:
-                    with open( 'author.txt', 'a+') as fp:
-                        if item['data_puid'] in fp.read():
-                            pass
+                item = YyItem()
+                item['data_anchor'] = video.xpath('@data-anchor').extract()[0]
+                item['data_puid'] = video.xpath('@data-puid').extract()[0].strip()
+                item['data_videofrom'] = video.xpath('@data-videofrom').extract()[0]
+                item['data_pid'] = video.xpath('@data-pid').extract()[0]
+                item['data_ouid'] = video.xpath('@data-ouid').extract()[0]
+                item['v_thumb_img'] = video.xpath('.//img/@src').extract()[0]
+                item['v_word_cut'] = video.xpath('.//a[@class="word-cut"]/text()').extract()[0]
+                item['v_play_times'] = video.xpath('.//span[@class="times"]/text()').extract()[0]
+                item['v_duration'] = video.xpath('.//span[@class="duration"]/text()').extract()[0]
+                item['data_yyNo'] = ''
+                items.append(item)
+
+                logging.info(f"Parsed video: {item['data_anchor']} | PUID: {item['data_puid']} | PID: {item['data_pid']}")
+
+                try:
+                    with open(item['data_anchor'] + '.txt', 'r') as fp:
+                        if item['data_pid'] in fp.read().decode('utf8'):
+                            logging.info(f"Video {item['data_pid']} already processed for anchor {item['data_anchor']}")
                         else:
-                            fp.seek(0, 2)
-                            fp.write('|'.join((item['data_anchor'], item['data_puid'])) + '\n' )
-            except:
-                pass
-            # 确定是否要抓取粉丝的zone, 如果需要构造请求url
-            try:
-                with open('crawled_ouid.txt', 'r') as fp:
-                    if item['data_ouid'] in fp.read():
-                        pass
-                    else:
-                        zone_urls.append("http://z.yy.com/zone/myzone.do?type=2" + 
-                                         "&puid=" + item['data_ouid'] +
-                                         "&feedFrom=1&chkact=0" )
-            except IOError as e:
-                if e.errno == 2:
-                    open('crawled_ouid.txt', 'a').close()
-            # 确定是否要访问主播的zone， 如果需要则构造请求url
-            try:
-                with open('all_author.txt', 'r') as fp:
-                    if item['data_anchor'] in fp.read().decode('utf8'):
-                        pass
-                    else:
-                        author_url = "http://z.yy.com/zone/myzone.do?type=10" + "&puid=" + item['data_puid']
-                        author_urls.append(author_url)
-            except IOError as e:
-                if e.errno ==2:
-                    open('all_author.txt', 'a').close()
-        #items.extend([self.make_requests_from_url(url).replace(callback=self.parse) for url in urls])
+                            url = ("http://video.z.yy.com/getVideoTapeByPid.do?"
+                                f"uid={item['data_anchor']}&programId={item['data_pid']}&videoFrom=popularAnchor")
+                            urls.append(url)
+                            logging.info(f"Added popularAuthor URL: {url}")
+                except IOError as e:
+                    if e.errno == 2:
+                        logging.warning(f"File not found for anchor {item['data_anchor']}.txt. Creating a new file.")
+                        open(item['data_anchor'] + '.txt', 'a').close()
+
+                try:
+                    if item['data_puid']:
+                        with open('author.txt', 'a+') as fp:
+                            if item['data_puid'] in fp.read():
+                                logging.info(f"PUID {item['data_puid']} already exists in author.txt")
+                            else:
+                                fp.seek(0, 2)
+                                fp.write('|'.join((item['data_anchor'], item['data_puid'])) + '\n')
+                                logging.info(f"Saved PUID {item['data_puid']} for anchor {item['data_anchor']} in author.txt")
+                except Exception as e:
+                    logging.error(f"Error saving PUID {item['data_puid']}: {e}")
+
+                try:
+                    with open('crawled_ouid.txt', 'r') as fp:
+                        if item['data_ouid'] in fp.read():
+                            logging.info(f"OUID {item['data_ouid']} already exists in crawled_ouid.txt")
+                        else:
+                            zone_url = ("http://z.yy.com/zone/myzone.do?type=2"
+                                        f"&puid={item['data_ouid']}&feedFrom=1&chkact=0")
+                            zone_urls.append(zone_url)
+                            logging.info(f"Added fan zone URL: {zone_url}")
+                except IOError as e:
+                    if e.errno == 2:
+                        logging.warning(f"File crawled_ouid.txt not found. Creating a new file.")
+                        open('crawled_ouid.txt', 'a').close()
+
+                try:
+                    with open('all_author.txt', 'r') as fp:
+                        if item['data_anchor'] in fp.read().decode('utf8'):
+                            logging.info(f"Anchor {item['data_anchor']} already exists in all_author.txt")
+                        else:
+                            author_url = ("http://z.yy.com/zone/myzone.do?type=10"
+                                        f"&puid={item['data_puid']}")
+                            author_urls.append(author_url)
+                            logging.info(f"Added author zone URL: {author_url}")
+                except IOError as e:
+                    if e.errno == 2:
+                        logging.warning(f"File all_author.txt not found. Creating a new file.")
+                        open('all_author.txt', 'a').close()
+
+            except Exception as e:
+                logging.error(f"Error parsing video in playlist: {e}")
+
+        logging.info(f"Generated {len(urls)} popularAuthor URLs.")
+        logging.info(f"Generated {len(zone_urls)} fan zone URLs.")
+        logging.info(f"Generated {len(author_urls)} author zone URLs.")
+
         items.extend([self.make_requests_from_url(url).replace(callback=self.parse_ex) for url in zone_urls])
         items.extend([self.make_requests_from_url(url).replace(callback=self.parse_author) for url in author_urls])
-        
+
+        logging.info(f"Returning {len(items)} items for further processing.")
         return items
+
     
     def parse_author(self, response):
         """ 解析主播的信息(只有主播的地址才需要这条解析） """
