@@ -315,6 +315,8 @@ class ExtendYySpider(scrapy.Spider):
         
         return items
                     
-            
+def close(self, reason):
+    logging.info(f"Spider '{self.name}' closed. Reason: {reason}")
+    super().close(reason)            
             
            
