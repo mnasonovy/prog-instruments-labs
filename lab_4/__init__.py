@@ -29,6 +29,11 @@ class YySpider(scrapy.Spider):
         ]
     
     base_url = 'http://video.z.yy.com/getVideoTapeByPid.do'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        logging.info(f"Spider '{self.name}' initialized with start URLs: {self.start_urls}")
+        
     def parse(self, response):
         time.sleep(1)
         playList = response.xpath('//ul[@id="playList"]/li')
