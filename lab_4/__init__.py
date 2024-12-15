@@ -148,28 +148,51 @@ class YySpider(scrapy.Spider):
 
 
     def parse_feed(self, response):
-        "根据feedid, 粉丝的puid找到视频的data_pid, 主播的data_puid"
+        """
+        根据feedid, 粉丝的puid找到视频的data_pid, 主播的data_puid
+        """
+        logging.info(f"Received response for URL: {response.url}")
         try:
             items = []
             v_meta = response.xpath('//div[@class="v-meta"]')
+            logging.debug("Parsing v-meta data...")
+
             data_puid = v_meta.xpath('./span[@class="v-performer"]/a').re(r'=(\w+)')[0]
             data_pid = v_meta.xpath('.//li[@id="weibo"]/@data-pid').extract()[0]
-            (data_ouid, v_feedId) = response.url.split('=')[-2:]
+            data_ouid, v_feedId = response.url.split('=')[-2:]
+
+            logging.info(f"Extracted data: PUID={data_puid}, PID={data_pid}, OUID={data_ouid}, FeedID={v_feedId}")
+
             item = YyItem()
             item['data_puid'] = data_puid
             item['data_pid'] = data_pid
             item['data_ouid'] = data_ouid
             item['v_feedId'] = v_feedId
-            log.msg('parse_feed caller ==='+ item['data_pid'], level=log.WARNING)
-            url = "http://video.z.yy.com/getVideoTapeByPid.do?" + "programId=" + item["data_pid"] + "&videoFrom=popularAnchor"
-            items.extend([self.make_requests_from_url(url).replace(callback=self.parse) ])     
+
+            logging.info(f"Created item: {item}")
+
+            url = ("http://video.z.yy.com/getVideoTapeByPid.do?"
+                f"programId={item['data_pid']}&videoFrom=popularAnchor")
+            logging.info(f"Generated URL for further processing: {url}")
+
+            items.extend([self.make_requests_from_url(url).replace(callback=self.parse)])
+            logging.info(f"Added request for URL: {url}")
+
         except IndexError as e:
-            with open('feedID_not_performer.txt', 'a+') as fp:
-                fp.seek(0, 2)
-                fp.write('|'.join(response.url.split('=')[-2]) + '\n')
-                #fp.write(item['data_ouid'] + '|' + item['v_feedId'] + '\n')
-        
+            logging.warning(f"IndexError encountered: {e}")
+            logging.warning(f"Missing performer data for URL: {response.url}")
+
+            try:
+                with open('feedID_not_performer.txt', 'a+') as fp:
+                    fp.seek(0, 2)
+                    fp.write('|'.join(response.url.split('=')[-2]) + '\n')
+                logging.info(f"Logged missing performer data to feedID_not_performer.txt for URL: {response.url}")
+            except Exception as file_error:
+                logging.error(f"Failed to write to feedID_not_performer.txt: {file_error}")
+
+        logging.info(f"Returning {len(items)} items for further processing.")
         return items
+
     
     def parse_ex(self, response):
         """ 从页面的最后一个<script>中找数据 """
