@@ -10,8 +10,16 @@ import re
 import time
 import random
 import scrapy
+import logging
 from tutorial.items import YyItem
 from scrapy import log
+
+logging.basicConfig(
+    filename='spider.log',
+    filemode='a',
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 class YySpider(scrapy.Spider):
     name = 'yy'
