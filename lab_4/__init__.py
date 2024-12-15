@@ -294,59 +294,79 @@ class ExtendYySpider(scrapy.Spider):
     allowed_domains = ['z.yy.com']
     start_urls = [
         "http://z.yy.com/zone/myzone.do?type=2&puid=15d77dc1e4f8d52b90cc4e478ec81db9&feedFrom=1&chkact=1",
-        ]
-    
-    def parse(self, response):
-        """ 从页面的最后一个<script>中找数据 """
-        time.sleep(1)
-        loadPage = response.xpath('//script')[-1]
-        user = loadPage.re(r'user:(\{\s*.*\})')[0]
-        user = json.loads(user)
-        uid = user['uid']
-        yyNo = user['yyNo']
-        playList = loadPage.re(r'videoData:(\[\s*.*\])')[0]
-        playList = json.loads(playList)
-        items = []
-        urls = []
-        for video in playList:
-            item = YyItem()
-            item['data_anchor'] = ''
-            if video['performerNames']:
-                item['data_anchor'] = video['performerNames'].keys()[0]
-                log.msg(str(uid)+ 'res not have performerNames', level=log.WARNING)
-            item['data_ouid'] = str(uid)
-            item['data_oid'] = str(video['ownerId'])
-            item['data_pid'] = video['programId']
-            item['data_yyNo'] = str(yyNo)
-            item['v_thumb_img'] = video['snapshotUrl']
-            item['v_play_times'] = str(video['playTimes'])
-            item['v_duration'] = str(video['duration'])
-            items.append(item)
-            try:
-                with open( item['data_anchor'] + '.txt', 'r') as fp:
-                    if item['data_pid'] in fp.read().decode('utf8'):
-                        continue
-                    else:
-                        urls.append("http://video.z.yy.com/getVideoTapeByPid.do?" + 
-                                    "uid=" + item['data_anchor'] +
-                                    "@programId=" + item['data_pid'] +
-                                    "&videoFrom=popularAnchor#" )
-            except IOError as e:
-                open( item['data_anchor'] + '.txt', 'a+').close()
-                
-            try:
-                with open('crawled_ouid.txt', 'a+') as fp:
-                    if item['data_ouid'] in fp.read():
-                        pass
-                    else:
-                        fp.write(item['data_ouid'] + '\n')
-            except IOError as e:
-                if e.errno == 2:
-                    open('crawled_ouid.txt', 'a').close()
-                    
+    ]
 
-        items.extend([self.make_requests_from_url(url).replace(callback=YySpider().parse) for url in urls])
-        
+    def parse(self, response):
+        """从页面的最后一个<script>中找数据"""
+        logging.info(f"Processing response for URL: {response.url}")
+        time.sleep(1)
+        try:
+            loadPage = response.xpath('//script')[-1]
+            logging.debug("Extracted last <script> element from the page.")
+
+            user = loadPage.re(r'user:(\{\s*.*\})')[0]
+            user = json.loads(user)
+            uid = user['uid']
+            yyNo = user['yyNo']
+            logging.info(f"Extracted user data: UID={uid}, yyNo={yyNo}")
+
+            playList = loadPage.re(r'videoData:(\[\s*.*\])')[0]
+            playList = json.loads(playList)
+            logging.info(f"Extracted video playlist with {len(playList)} items.")
+            items = []
+            urls = []
+
+            for video in playList:
+                item = YyItem()
+                item['data_anchor'] = ''
+                if video.get('performerNames'):
+                    item['data_anchor'] = list(video['performerNames'].keys())[0]
+                else:
+                    logging.warning(f"Video has no performerNames: UID={uid}")
+
+                item['data_ouid'] = str(uid)
+                item['data_oid'] = str(video['ownerId'])
+                item['data_pid'] = video['programId']
+                item['data_yyNo'] = str(yyNo)
+                item['v_thumb_img'] = video['snapshotUrl']
+                item['v_play_times'] = str(video['playTimes'])
+                item['v_duration'] = str(video['duration'])
+                items.append(item)
+
+                try:
+                    with open(item['data_anchor'] + '.txt', 'r') as fp:
+                        if item['data_pid'] in fp.read():
+                            logging.info(f"Program ID {item['data_pid']} already processed for anchor {item['data_anchor']}.")
+                            continue
+                        else:
+                            url = (f"http://video.z.yy.com/getVideoTapeByPid.do?"
+                                   f"uid={item['data_anchor']}@programId={item['data_pid']}&videoFrom=popularAnchor#")
+                            urls.append(url)
+                            logging.info(f"Generated URL for missing program ID: {url}")
+                except IOError as e:
+                    if e.errno == 2:
+                        open(item['data_anchor'] + '.txt', 'a+').close()
+                        logging.warning(f"File {item['data_anchor']}.txt not found, created a new one.")
+
+                try:
+                    with open('crawled_ouid.txt', 'a+') as fp:
+                        if item['data_ouid'] not in fp.read():
+                            fp.write(item['data_ouid'] + '\n')
+                            logging.info(f"Marked OUID {item['data_ouid']} as crawled.")
+                except IOError as e:
+                    if e.errno == 2:
+                        open('crawled_ouid.txt', 'a').close()
+                        logging.warning(f"File crawled_ouid.txt not found, created a new one.")
+
+            items.extend([self.make_requests_from_url(url).replace(callback=YySpider().parse) for url in urls])
+            logging.info(f"Added {len(urls)} requests for program URLs.")
+
+        except IndexError as e:
+            logging.error(f"IndexError while processing response for URL {response.url}: {e}")
+        except Exception as e:
+            logging.error(f"Unexpected error in parse method for URL {response.url}: {e}")
+
+        logging.info(f"Returning {len(items)} items for further processing.")
         return items
                     
 def close(self, reason):
