@@ -194,75 +194,97 @@ class YySpider(scrapy.Spider):
         return items
 
     
-    def parse_ex(self, response):
-        """ 从页面的最后一个<script>中找数据 """
-        time.sleep(1)
+def parse_ex(self, response):
+    """从页面的最后一个<script>中找数据"""
+    logging.info(f"Processing response for URL: {response.url}")
+    time.sleep(1)
+
+    try:
         loadPage = response.xpath('//script')[-1]
-        # 后面这个try是为了捕获未开YY空间自动跳转产生的错误
-        try:
-            user = loadPage.re(r'user:(\{\s*.*\})')[0]
-            user = json.loads(user)
-            user_id = user['uid']
-            user_uid = user['UID']
-            yyNo = user['yyNo']
-            playList = loadPage.re(r'videoData:(\[\s*.*\])')[0]
-            playList = json.loads(playList)
-            items = []
-            urls = []
-        except IndexError:
-            if "type=10" in response.url:
-                return []            
-        feedId_urls = []
-        for video in playList:
-            item = YyItem()
-            item['data_anchor'] = ''
-            if video['performerNames']:
-                item['data_anchor'] = video['performerNames'].keys()[0]
-            item['data_ouid'] = str(user_uid)
-            item['data_oid'] = str(user_id)
-            item['data_pid'] = video['programId']
-            item['data_yyNo'] = str(yyNo)
-            item['v_thumb_img'] = video['snapshotUrl']
-            item['v_play_times'] = str(video['playTimes'])
-            item['v_duration'] = str(video['duration'])
-            item['v_feedId'] = str(video['feedId'])
-            items.append(item)
-            
-            if not item['data_pid']:
-                try:
-                    with open(  item['data_anchor'] + '.txt', 'r') as fp:
-                        if item['data_pid'] in fp.read().decode('utf8'):
-                            continue
-                        else:
-                            urls.append("http://video.z.yy.com/getVideoTapeByPid.do?" + 
-                                        "uid=" + item['data_anchor'] +
-                                        "@programId=" + item['data_pid'] +
-                                        "&videoFrom=popularAnchor#" )
-                except IOError as e:
-                    open(  item['data_anchor'] + '.txt', 'a+').close()
-            elif item['v_feedId']:
-                feedId_urls.append("http://z.yy.com/zone/myzone.do?" + 
-                                   "puid=" + item['data_ouid'] +
-                                   "&feedId=" + item['v_feedId'])
-            else:
-                log.msg(response.url + '===programId, feedId', level="WARNING")
+        logging.debug("Extracted last <script> element from the page.")
+
+        user = loadPage.re(r'user:(\{\s*.*\})')[0]
+        user = json.loads(user)
+        user_id = user['uid']
+        user_uid = user['UID']
+        yyNo = user['yyNo']
+        logging.info(f"Extracted user data: UID={user_uid}, ID={user_id}, yyNo={yyNo}")
+
+        playList = loadPage.re(r'videoData:(\[\s*.*\])')[0]
+        playList = json.loads(playList)
+        logging.info(f"Extracted video playlist with {len(playList)} items.")
+        items = []
+        urls = []
+
+    except IndexError:
+        logging.warning(f"No user or video data found in response for URL: {response.url}")
+        if "type=10" in response.url:
+            logging.info(f"Skipping URL due to missing type=10 condition: {response.url}")
+            return []
+
+    feedId_urls = []
+    for video in playList:
+        item = YyItem()
+        item['data_anchor'] = ''
+        if video.get('performerNames'):
+            item['data_anchor'] = list(video['performerNames'].keys())[0]
+
+        item['data_ouid'] = str(user_uid)
+        item['data_oid'] = str(user_id)
+        item['data_pid'] = video['programId']
+        item['data_yyNo'] = str(yyNo)
+        item['v_thumb_img'] = video['snapshotUrl']
+        item['v_play_times'] = str(video['playTimes'])
+        item['v_duration'] = str(video['duration'])
+        item['v_feedId'] = str(video['feedId'])
+
+        logging.debug(f"Created YyItem: {item}")
+        items.append(item)
+
+        if not item['data_pid']:
             try:
-                with open( 'crawled_ouid.txt', 'a+') as fp:
-                    if item['data_ouid'] not in fp.read():
-                        # 从文件末尾处追加
-                        fp.seek(0, 2)
-                        fp.write(item['data_ouid'] + '\n')
-                        log.msg('===' + item['data_ouid'] + 'had been crawled!', level=log.WARNING)
+                with open(item['data_anchor'] + '.txt', 'r') as fp:
+                    if item['data_pid'] in fp.read():
+                        logging.info(f"Program ID {item['data_pid']} already processed for anchor {item['data_anchor']}.")
+                        continue
+                    else:
+                        url = (f"http://video.z.yy.com/getVideoTapeByPid.do?"
+                               f"uid={item['data_anchor']}@programId={item['data_pid']}&videoFrom=popularAnchor#")
+                        urls.append(url)
+                        logging.info(f"Generated URL for missing program ID: {url}")
             except IOError as e:
                 if e.errno == 2:
-                    open( 'crawled_ouid.txt', 'a').close()
-                else:
-                    log.msg('===' + item['data_ouid'] + 'some where song', level=log.WARNING)
-                    
-        items.extend([self.make_requests_from_url(url).replace(callback=self.parse) for url in urls])
-        items.extend([self.make_requests_from_url(url).replace(callback=self.parse_feed) for url in feedId_urls])
-        
-        return items
+                    open(item['data_anchor'] + '.txt', 'a+').close()
+                    logging.warning(f"File {item['data_anchor']}.txt not found, created a new one.")
+        elif item['v_feedId']:
+            feedId_url = (f"http://z.yy.com/zone/myzone.do?"
+                          f"puid={item['data_ouid']}&feedId={item['v_feedId']}")
+            feedId_urls.append(feedId_url)
+            logging.info(f"Generated Feed ID URL: {feedId_url}")
+        else:
+            logging.warning(f"Missing program ID and Feed ID for video: {video}")
+
+        try:
+            with open('crawled_ouid.txt', 'a+') as fp:
+                if item['data_ouid'] not in fp.read():
+                    fp.seek(0, 2)
+                    fp.write(item['data_ouid'] + '\n')
+                    logging.info(f"Marked OUID {item['data_ouid']} as crawled.")
+        except IOError as e:
+            if e.errno == 2:
+                open('crawled_ouid.txt', 'a').close()
+                logging.warning(f"File crawled_ouid.txt not found, created a new one.")
+            else:
+                logging.error(f"Failed to update crawled OUID file: {e}")
+
+    items.extend([self.make_requests_from_url(url).replace(callback=self.parse) for url in urls])
+    logging.info(f"Added {len(urls)} requests for program URLs.")
+
+    items.extend([self.make_requests_from_url(url).replace(callback=self.parse_feed) for url in feedId_urls])
+    logging.info(f"Added {len(feedId_urls)} requests for Feed ID URLs.")
+
+    logging.info(f"Returning {len(items)} items for further processing.")
+    return items
 
         
 
