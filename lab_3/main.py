@@ -15,3 +15,16 @@ VALIDATORS = {
     "uuid": re.compile(r'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$'),
     "time": re.compile(r'^([01]\d|2[0-3]):[0-5]\d:[0-5]\d\.\d{6}$')
 }
+
+def validate_row(row: List[str], headers: List[str]) -> bool:
+    """
+    Проверяет, соответствует ли строка формату, определенному регулярными выражениями.
+    :param row: Данные строки
+    :param headers: Заголовки столбцов
+    :return: True, если строка валидна, иначе False
+    """
+    for column, value in zip(headers, row):
+        if column in VALIDATORS:
+            if not VALIDATORS[column].fullmatch(value):
+                return False
+    return True
