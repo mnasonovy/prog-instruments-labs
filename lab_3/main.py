@@ -28,3 +28,19 @@ def validate_row(row: List[str], headers: List[str]) -> bool:
             if not VALIDATORS[column].fullmatch(value):
                 return False
     return True
+
+def find_invalid_rows(csv_path: str) -> List[int]:
+    """
+    Находит номера невалидных строк в CSV-файле.
+    :param csv_path: Путь к CSV-файлу
+    :return: Список номеров невалидных строк
+    """
+    invalid_rows = []
+    with open(csv_path, 'r', encoding='utf-16') as csvfile:
+        reader = csv.reader(csvfile, delimiter=';')
+        headers = next(reader)  
+        for i, row in enumerate(reader):
+            if not validate_row(row, headers):
+                invalid_rows.append(i)  
+    return invalid_rows
+
