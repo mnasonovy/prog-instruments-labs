@@ -6,16 +6,16 @@ from typing import List
 from checksum import calculate_checksum, serialize_result
 
 VALIDATORS = {
-    "email": re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
-    "height": re.compile(r'^\d\.\d{2}$'),
+    "email": re.compile(r'^[a-z0-9]+(?:[._][a-z0-9]+)*\@[a-z]+(?:\.[a-z]+)+$'),
+    "height": re.compile(r'^[1-2]\.\d{2}$'),
     "inn": re.compile(r'^\d{12}$'),
-    "passport": re.compile(r'^\d{2} \d{2} \d{6}$'),
-    "occupation": re.compile(r'^[а-яА-ЯёЁa-zA-Z]+(-[а-яА-ЯёЁa-zA-Z]+)*$'),
-    "latitude": re.compile(r'^-?\d+(\.\d+)?$'),
-    "hex_color": re.compile(r'^#[0-9a-fA-F]{6}$'),
+    "passport": re.compile(r'^\d{2}\s\d{2}\s\d{6}$'),
+    "occupation": re.compile(r'[a-zA-Zа-яА-ЯёЁ -]+'),
+    "latitude": re.compile(r'^-?(90|[0-8]?[0-9])\.\d+$'),
+    "hex_color": re.compile(r'^\#[0-9a-fA-F]{6}$'),
     "issn": re.compile(r'^\d{4}-\d{4}$'),
-    "uuid": re.compile(r'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$'),
-    "time": re.compile(r'^([01]\d|2[0-3]):[0-5]\d:[0-5]\d\.\d{6}$')
+    "uuid": re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'),
+    "time": re.compile(r'^(2[0-3]|[0-1][0-9]):[0-5][0-9]:[0-5][0-9]\.\d{6}$')
 }
 
 def validate_row(row: List[str], headers: List[str]) -> bool:
