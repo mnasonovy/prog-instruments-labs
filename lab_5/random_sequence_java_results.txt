@@ -1,0 +1,3 @@
+Frequency Bitwise Test: 0.2888443663464849
+Same Bits Test: 0.6476660541707414
+Longest Ones Sequence Test: 0.0388913961978786

@@ -1,0 +1,7 @@
+{
+    "cc_sequence_intput": "random_sequence_cc.txt",
+    "java_sequence_intput": "random_sequence_java.txt",
+    "cc_sequence_output": "random_sequence_cc_results.txt",
+    "java_sequence_output": "random_sequence_java_results.txt",
+    "consts_PI": [0.2148, 0.3672, 0.2305, 0.1875]
+}
