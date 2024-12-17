@@ -44,3 +44,18 @@ def find_invalid_rows(csv_path: str) -> List[int]:
                 invalid_rows.append(i)  
     return invalid_rows
 
+def save_to_json(variant: int, checksum: str, output_path: str = 'lab_3/result.json') -> None:
+    """
+    Сохраняет номер варианта и контрольную сумму в JSON файл.
+    :param variant: Номер варианта
+    :param checksum: Контрольная сумма
+    :param output_path: Путь к JSON файлу
+    """
+    result = {
+        "variant": variant,
+        "checksum": checksum
+    }
+    with open(output_path, 'w', encoding='utf-8') as json_file:
+        json.dump(result, json_file, ensure_ascii=False, indent=4)
+
+
