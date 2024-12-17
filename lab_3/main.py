@@ -1,7 +1,9 @@
 import re
 import csv
 import json
+
 from typing import List
+from checksum import calculate_checksum, serialize_result
 
 VALIDATORS = {
     "email": re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'),
@@ -71,3 +73,21 @@ def load_from_json(input_path: str = 'lab_3/result.json') -> dict:
     except FileNotFoundError:
         return {}
 
+if __name__ == "__main__":
+    result = load_from_json('lab_3/result.json')
+    if result:
+        print(f"Загруженные данные: Вариант - {result['variant']}, Контрольная сумма - {result['checksum']}")
+    else:
+        print("Данные не найдены. Создадим новый файл.")
+
+    csv_path = 'lab_3/79.csv'
+
+    invalid_rows = find_invalid_rows(csv_path)
+    print(f"Найдено {len(invalid_rows)} невалидных строк.")
+
+    checksum = calculate_checksum(invalid_rows)
+    print(f"Контрольная сумма: {checksum}")
+
+    variant = 79
+    save_to_json(variant, checksum)
+    print("Результат сохранен в result.json.")
