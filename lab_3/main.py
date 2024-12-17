@@ -59,3 +59,15 @@ def save_to_json(variant: int, checksum: str, output_path: str = 'lab_3/result.j
         json.dump(result, json_file, ensure_ascii=False, indent=4)
 
 
+def load_from_json(input_path: str = 'lab_3/result.json') -> dict:
+    """
+    Загружает данные из JSON файла.
+    :param input_path: Путь к JSON файлу
+    :return: Словарь с данными
+    """
+    try:
+        with open(input_path, 'r', encoding='utf-8') as json_file:
+            return json.load(json_file)
+    except FileNotFoundError:
+        return {}
+
